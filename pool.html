@@ -1,17 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Latakiano Pool Room</title>
+    <meta charset="UTF-8">
+    <title>Latakiano 8-Ball Pool</title>
     <style>
-        body { background: #000; color: white; text-align: center; font-family: sans-serif; }
-        canvas { background: #076324; border: 10px solid #5d3a1a; border-radius: 10px; }
+        body { background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
+        canvas { background: #0e5c1f; border: 12px solid #5d3a1a; border-radius: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.5); cursor: crosshair; margin-top: 20px; }
+        .ui { margin-top: 10px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
-    <h1>Latakiano Billiards Table</h1>
-    <p>The game is loading...</p>
-    <canvas id="poolTable" width="600" height="300"></canvas>
-    <br><br>
-    <a href="index.html" style="color: #4caf50;">Back to Home</a>
+    <h1>LATAKIANO BILLIARDS</h1>
+    <div class="ui">Drag to aim and shoot the White Ball!</div>
+    <canvas id="poolCanvas"></canvas>
+    <br>
+    <a href="index.html" style="color: #4caf50; text-decoration: none; font-weight: bold;">[ Back to Lobby ]</a>
+
+    <script>
+        const canvas = document.getElementById('poolCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800; canvas.height = 400;
+
+        let ball = { x: 200, y: 200, r: 10, vx: 0, vy: 0, color: 'white' };
+        let target = { x: 600, y: 200, r: 10, color: 'red' };
+        let isDragging = false;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw Table Holes
+            ctx.fillStyle = '#000';
+            [ [0,0], [400,0], [800,0], [0,400], [400,400], [800,400] ].forEach(h => {
+                ctx.beginPath(); ctx.arc(h[0], h[1], 25, 0, Math.PI*2); ctx.fill();
+            });
+
+            // Draw Red Ball
+            ctx.fillStyle = target.color; ctx.beginPath(); ctx.arc(target.x, target.y, target.r, 0, Math.PI*2); ctx.fill();
+
+            // Draw White Ball
+            ctx.fillStyle = ball.color; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+
+            // Physics
+            ball.x += ball.vx; ball.y += ball.vy;
+            ball.vx *= 0.98; ball.vy *= 0.98; // Friction
+
+            requestAnimationFrame(draw);
+        }
+
+        canvas.onmousedown = (e) => { isDragging = true; };
+        canvas.onmouseup = (e) => {
+            if(isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                ball.vx = (ball.x - (e.clientX - rect.left)) * 0.1;
+                ball.vy = (ball.y - (e.clientY - rect.top)) * 0.1;
+            }
+            isDragging = false;
+        };
+        draw();
+    </script>
 </body>
 </html>
