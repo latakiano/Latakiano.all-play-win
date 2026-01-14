@@ -1,97 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>LATAKIANO PRO POOL</title>
+    <meta charset="UTF-8">
+    <title>LATAKIANO - 8 Ball Pro</title>
     <style>
-        body { background: #111; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #game-container { position: relative; border: 20px solid #3d2616; border-radius: 20px; box-shadow: 0 0 100px #000; }
-        canvas { background: #0b5327; cursor: crosshair; }
-        
-        /* عصا القوة الجانبية */
-        #power-bar-container { position: absolute; right: -60px; top: 50px; width: 30px; height: 300px; background: #222; border: 2px solid #444; border-radius: 5px; }
-        #power-level { position: absolute; bottom: 0; width: 100%; height: 0%; background: linear-gradient(to top, #4caf50, #ffeb3b, #f44336); transition: 0.1s; }
-        .label { position: absolute; right: -70px; top: 20px; color: white; transform: rotate(90deg); font-weight: bold; }
+        body { background: #000; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: 'Arial', sans-serif; }
+        #ui { color: #4caf50; font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+        canvas { 
+            background: #095a23; 
+            border: 15px solid #4a2c16; 
+            border-radius: 15px; 
+            box-shadow: inset 0 0 100px #000, 0 20px 50px rgba(0,0,0,0.9);
+            cursor: none; /* سنرسم عصا بدل الماوس */
+        }
     </style>
 </head>
 <body>
-
-<div id="game-container">
-    <div class="label">POWER GAUGE</div>
-    <div id="power-bar-container"><div id="power-level"></div></div>
+    <div id="ui">LATAKIANO PRO POOL: MOVE MOUSE TO AIM - CLICK TO SHOOT</div>
     <canvas id="poolCanvas" width="900" height="450"></canvas>
-</div>
 
-<script>
-    const canvas = document.getElementById('poolCanvas');
-    const ctx = canvas.getContext('2d');
-    const powerLevelEl = document.getElementById('power-level');
-    
-    let power = 0;
-    let isCharging = false;
-    let balls = [];
+    <script>
+        const canvas = document.getElementById('poolCanvas');
+        const ctx = canvas.getContext('2d');
+        let balls = [];
+        let mouse = { x: 0, y: 0, down: false };
 
-    // إنشاء كرات بلمعان احترافي
-    function createBall(x, y, color, type = 'target') {
-        return { x, y, r: 14, vx: 0, vy: 0, color, type };
-    }
-
-    function init() {
-        balls = [createBall(250, 225, '#fff', 'cue')];
-        // مثلث الكرات
-        for(let i=0; i<5; i++) {
-            for(let j=0; j<=i; j++) {
-                balls.push(createBall(600 + i*26, 225 - (i*13) + j*26, `hsl(${i*50 + j*20}, 70%, 50%)`));
+        function init() {
+            // الكرة البيضاء
+            balls.push({ x: 250, y: 225, r: 14, vx: 0, vy: 0, color: '#fff', num: '' });
+            // مثلث الكرات مع الأرقام
+            let startX = 600, startY = 225, spacing = 29, count = 1;
+            for(let i=0; i<5; i++) {
+                for(let j=0; j<=i; j++) {
+                    let color = count === 8 ? '#000' : (count <= 8 ? '#f1c40f' : '#e74c3c');
+                    balls.push({ x: startX + i*26, y: startY - (i*14) + j*29, r: 14, vx: 0, vy: 0, color: color, num: count++ });
+                }
             }
         }
-    }
 
-    function draw() {
-        ctx.fillStyle = '#0b5327'; // لون الطاولة
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // رسم الثقوب بظل داخلي
-        ctx.fillStyle = '#000';
-        [[0,0], [450,0], [900,0], [0,450], [450,450], [900,450]].forEach(p => {
-            ctx.beginPath(); ctx.arc(p[0], p[1], 35, 0, Math.PI*2); ctx.fill();
-        });
-
-        balls.forEach(b => {
-            // تأثير الكرة الزجاجية 3D
+        function drawBall(b) {
+            // تأثير 3D واللمعة
             let grad = ctx.createRadialGradient(b.x-5, b.y-5, 2, b.x, b.y, b.r);
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.3, b.color);
-            grad.addColorStop(1, '#000');
-            
+            grad.addColorStop(0, '#fff'); grad.addColorStop(0.4, b.color); grad.addColorStop(1, '#000');
             ctx.fillStyle = grad;
             ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
             
-            // فيزياء الحركة
-            b.x += b.vx; b.y += b.vy;
-            b.vx *= 0.985; b.vy *= 0.985;
-            
-            if(b.x < 20 || b.x > 880) b.vx *= -0.8;
-            if(b.y < 20 || b.y > 430) b.vy *= -0.8;
-        });
-
-        if(isCharging) {
-            power = (power + 1.5) % 100;
-            powerLevelEl.style.height = power + '%';
+            // رسم الرقم في منتصف الكرة
+            if(b.num !== '') {
+                ctx.fillStyle = b.color === '#fff' || b.color === '#f1c40f' ? 'black' : 'white';
+                ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(b.num, b.x, b.y + 4);
+            }
         }
-        requestAnimationFrame(draw);
-    }
 
-    window.onkeydown = (e) => { if(e.code === 'Space') isCharging = true; };
-    window.onkeyup = (e) => {
-        if(e.code === 'Space') {
-            balls[0].vx = power * 0.2; // إطلاق الكرة بقوة العصا الجانبية
-            isCharging = false;
-            power = 0;
-            powerLevelEl.style.height = '0%';
+        function drawCue(cueBall) {
+            // رسم عصا البلياردو الخشبية
+            let angle = Math.atan2(mouse.y - cueBall.y, mouse.x - cueBall.x);
+            ctx.save();
+            ctx.translate(cueBall.x, cueBall.y);
+            ctx.rotate(angle);
+            // العصا
+            let grad = ctx.createLinearGradient(30, -4, 30, 4);
+            grad.addColorStop(0, '#8b4513'); grad.addColorStop(0.5, '#deb887'); grad.addColorStop(1, '#8b4513');
+            ctx.fillStyle = grad;
+            ctx.fillRect(40, -4, 250, 8); // جسم العصا
+            ctx.fillStyle = '#fff'; ctx.fillRect(40, -4, 10, 8); // طرف العصا الأبيض
+            ctx.restore();
         }
-    };
 
-    init();
-    draw();
-</script>
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // الثقوب
+            ctx.fillStyle = '#050505';
+            [[0,0], [450,0], [900,0], [0,450], [450,450], [900,450]].forEach(p => {
+                ctx.beginPath(); ctx.arc(p[0], p[1], 30, 0, Math.PI*2); ctx.fill();
+            });
+
+            balls.forEach((b, i) => {
+                b.x += b.vx; b.y += b.vy;
+                b.vx *= 0.99; b.vy *= 0.99;
+                if(b.x < 15 || b.x > 885) b.vx *= -0.8;
+                if(b.y < 15 || b.y > 435) b.vy *= -0.8;
+                drawBall(b);
+            });
+
+            // رسم العصا عند توقف الكرات
+            let moving = balls.some(b => Math.abs(b.vx) > 0.1);
+            if(!moving) drawCue(balls[0]);
+
+            requestAnimationFrame(update);
+        }
+
+        canvas.onmousemove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top;
+        };
+
+        canvas.onmousedown = () => {
+            let b = balls[0];
+            let angle = Math.atan2(b.y - mouse.y, b.x - mouse.x);
+            b.vx = Math.cos(angle) * 15; b.vy = Math.sin(angle) * 15;
+        };
+
+        init(); update();
+    </script>
 </body>
 </html>
