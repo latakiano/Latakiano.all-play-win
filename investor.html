@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة مستثمر الجبل</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f0f4f8; padding: 20px; }
+        .game-container { background: white; max-width: 400px; margin: auto; padding: 20px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        #money { font-size: 2em; color: #2ecc71; margin: 10px 0; }
+        button { padding: 15px 25px; font-size: 1.2em; cursor: pointer; border: none; border-radius: 10px; transition: 0.3s; }
+        #clickBtn { background: #3498db; color: white; width: 100%; margin-bottom: 20px; }
+        #clickBtn:active { transform: scale(0.95); }
+        .upgrade { background: #e67e22; color: white; width: 100%; margin-top: 10px; font-size: 0.9em; }
+        .upgrade:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .stats { margin-top: 20px; font-size: 0.8em; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>💰 مستثمر الجبل</h1>
+    <div id="money">0 $</div>
+    <button id="clickBtn">اضغط لجمع المال!</button>
+    
+    <button id="buyUpgrade" class="upgrade" disabled>
+        شراء عامل (التكلفة: 10$) <br> (يجمع 1$ كل ثانية)
+    </button>
+    
+    <div class="stats">
+        الدخل التلقائي: <span id="pps">0</span>$ / ثانية
+    </div>
+</div>
+
+<script>
+    let money = 0;
+    let autoIncome = 0;
+    let upgradeCost = 10;
+
+    const moneyDisplay = document.getElementById('money');
+    const clickBtn = document.getElementById('clickBtn');
+    const upgradeBtn = document.getElementById('buyUpgrade');
+    const ppsDisplay = document.getElementById('pps');
+
+    // عند الضغط لجمع المال
+    clickBtn.addEventListener('click', () => {
+        money += 1;
+        updateDisplay();
+    });
+
+    // عند شراء تطوير
+    upgradeBtn.addEventListener('click', () => {
+        if (money >= upgradeCost) {
+            money -= upgradeCost;
+            autoIncome += 1;
+            upgradeCost = Math.round(upgradeCost * 1.5);
+            updateDisplay();
+        }
+    });
+
+    // تحديث الشاشة
+    function updateDisplay() {
+        moneyDisplay.innerText = money + " $";
+        ppsDisplay.innerText = autoIncome;
+        upgradeBtn.innerText = `شراء عامل (التكلفة: ${upgradeCost}$) \n (يجمع 1$ كل ثانية)`;
+        
+        if (money >= upgradeCost) {
+            upgradeBtn.disabled = false;
+        } else {
+            upgradeBtn.disabled = true;
+        }
+    }
+
+    // الدخل التلقائي كل ثانية
+    setInterval(() => {
+        money += autoIncome;
+        updateDisplay();
+    }, 1000);
+</script>
+
+</body>
+</html>
