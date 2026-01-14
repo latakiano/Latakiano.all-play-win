@@ -3,41 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LATAKIANO - TOUCH PRO</title>
+    <title>LATAKIANO - ELITE BILLIARDS</title>
     <style>
-        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        canvas { 
-            background: #095a23; 
-            border: 12px solid #3d2616; 
-            border-radius: 15px; 
-            box-shadow: inset 0 0 80px #000;
-            max-width: 98vw;
-        }
-        #power-ui { position: absolute; bottom: 20px; color: #4caf50; font-weight: bold; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; pointer-events: none; }
+        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; font-family: 'Arial', sans-serif; }
+        #table-container { position: relative; padding: 20px; background: #3d2616; border-radius: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); }
+        canvas { background: #0b5327; border-radius: 10px; box-shadow: inset 0 0 100px #000; cursor: none; }
     </style>
 </head>
 <body>
-    <div id="power-ui">DRAG ANYWHERE TO AIM & POWER</div>
-    <canvas id="poolCanvas" width="850" height="420"></canvas>
+    <div id="table-container">
+        <canvas id="poolCanvas" width="850" height="420"></canvas>
+    </div>
 
 <script>
     const canvas = document.getElementById('poolCanvas');
     const ctx = canvas.getContext('2d');
     let balls = [];
     let isMoving = false;
-    let dragData = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
+    let dragData = { active: false, x: 0, y: 0 };
 
     function init() {
         balls = [];
-        // الكرة البيضاء
-        balls.push({ x: 220, y: 210, r: 14, vx: 0, vy: 0, color: '#fff', num: '' });
-        // المثلث
-        let startX = 580, startY = 210, spacing = 30, count = 1;
+        balls.push({ x: 220, y: 210, r: 13, vx: 0, vy: 0, color: '#fff', num: '' });
+        let startX = 580, startY = 210, spacing = 28, count = 1;
         let colors = ["#f1c40f", "#2980b9", "#e74c3c", "#8e44ad", "#e67e22", "#27ae60", "#c0392b", "#000", "#f1c40f", "#2980b9", "#e74c3c", "#8e44ad", "#e67e22", "#27ae60", "#c0392b"];
         for (let i = 0; i < 5; i++) {
             for (let j = 0; j <= i; j++) {
-                balls.push({ x: startX + i*27, y: startY - (i*15) + j*spacing, r: 14, vx: 0, vy: 0, color: colors[count-1], num: count++ });
+                balls.push({ x: startX + i*25, y: startY - (i*14) + j*28, r: 13, vx: 0, vy: 0, color: colors[count-1], num: count++ });
             }
+        }
+    }
+
+    function drawTableDecoration() {
+        // رسم النقاط البيضاء على الحواف الخشبية
+        ctx.fillStyle = "white";
+        for(let i=1; i<4; i++) {
+            ctx.beginPath(); ctx.arc(i*212, -10, 3, 0, Math.PI*2); ctx.fill(); // فوق
+            ctx.beginPath(); ctx.arc(i*212, 430, 3, 0, Math.PI*2); ctx.fill(); // تحت
         }
     }
 
@@ -47,30 +49,28 @@
         ctx.fillStyle = grad;
         ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
         if(b.num !== '') {
-            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(b.x, b.y, 7, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = 'black'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillText(b.num, b.x, b.y + 4);
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'black'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.fillText(b.num, b.x, b.y + 3);
         }
     }
 
     function update() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // الثقوب
+        
+        // رسم الثقوب العميقة
         ctx.fillStyle = '#050505';
         [[0,0], [425,0], [850,0], [0,420], [425,420], [850,420]].forEach(p => {
-            ctx.beginPath(); ctx.arc(p[0], p[1], 32, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(p[0], p[1], 35, 0, Math.PI*2); ctx.fill();
         });
 
         isMoving = false;
         balls.forEach((b, i) => {
             b.x += b.vx; b.y += b.vy;
-            b.vx *= 0.985; b.vy *= 0.985;
-            if(Math.abs(b.vx) > 0.1 || Math.abs(b.vy) > 0.1) isMoving = true;
-
+            b.vx *= 0.99; b.vy *= 0.99;
+            if(Math.abs(b.vx) > 0.1) isMoving = true;
             if (b.x < b.r || b.x > canvas.width - b.r) b.vx *= -0.8;
             if (b.y < b.r || b.y > canvas.height - b.r) b.vy *= -0.8;
-
             drawBall(b);
-
             for (let j = i + 1; j < balls.length; j++) {
                 let b2 = balls[j];
                 let dx = b2.x - b.x, dy = b2.y - b.y, dist = Math.hypot(dx, dy);
@@ -82,76 +82,59 @@
             }
         });
 
-        // العصا ونظام التنشين الخارجي
+        // رسم العصا ونظام التنشين الخارجي المطور
         if (!isMoving && dragData.active) {
             let b = balls[0];
-            let dx = dragData.currentX - dragData.startX;
-            let dy = dragData.currentY - dragData.startY;
+            let dx = dragData.x - b.x;
+            let dy = dragData.y - b.y;
             let angle = Math.atan2(dy, dx);
             let dist = Math.min(Math.hypot(dx, dy), 150);
 
             ctx.save();
             ctx.translate(b.x, b.y);
-            ctx.rotate(angle + Math.PI); // عكس الاتجاه ليكون السحب للخلف
+            ctx.rotate(angle);
             
-            // رسم العصا
-            let cueGrad = ctx.createLinearGradient(dist + 20, -5, dist + 20, 5);
+            // خط إرشاد أمامي (Aim Line)
+            ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.moveTo(-20, 0); ctx.lineTo(-300, 0);
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.stroke();
+            
+            // العصا الخشبية (تظهر من الخلف وتضرب للأمام)
+            let cueGrad = ctx.createLinearGradient(dist + 30, -6, dist + 30, 6);
             cueGrad.addColorStop(0, '#5d3a1a'); cueGrad.addColorStop(0.5, '#deb887'); cueGrad.addColorStop(1, '#5d3a1a');
             ctx.fillStyle = cueGrad;
-            ctx.fillRect(dist + 20, -5, 250, 10);
-            ctx.fillStyle = '#fff'; ctx.fillRect(dist + 20, -5, 12, 10);
-            
-            // خط إرشاد خفيف
-            ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.moveTo(0,0); ctx.lineTo(-200, 0);
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.stroke();
+            ctx.fillRect(dist + 30, -6, 280, 12);
+            ctx.fillStyle = '#fff'; ctx.fillRect(dist + 30, -6, 10, 12); // رأس العصا
             ctx.restore();
         }
         requestAnimationFrame(update);
     }
 
-    // تعامل اللمس
-    function handleStart(x, y) {
-        if(!isMoving) {
-            dragData.active = true;
-            dragData.startX = x; dragData.startY = y;
-            dragData.currentX = x; dragData.currentY = y;
-        }
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
     }
-    function handleMove(x, y) {
-        if(dragData.active) {
-            dragData.currentX = x; dragData.currentY = y;
-        }
-    }
-    function handleEnd() {
+
+    const startAction = (e) => { if(!isMoving) dragData.active = true; };
+    const moveAction = (e) => { if(dragData.active) { let p = getPos(e); dragData.x = p.x; dragData.y = p.y; } };
+    const endAction = (e) => {
         if(dragData.active) {
             let b = balls[0];
-            let dx = dragData.currentX - dragData.startX;
-            let dy = dragData.currentY - dragData.startY;
+            let dx = dragData.x - b.x, dy = dragData.y - b.y;
             let angle = Math.atan2(dy, dx);
-            let dist = Math.hypot(dx, dy);
-            let power = Math.min(dist / 8, 20);
-            b.vx = -Math.cos(angle) * power; // الضرب عكس اتجاه السحب
-            b.vy = -Math.sin(angle) * power;
+            let power = Math.min(Math.hypot(dx, dy) / 8, 20);
+            b.vx = -Math.cos(angle) * power; b.vy = -Math.sin(angle) * power;
         }
         dragData.active = false;
-    }
+    };
 
-    canvas.addEventListener('mousedown', e => handleStart(e.offsetX, e.offsetY));
-    window.addEventListener('mousemove', e => {
-        const rect = canvas.getBoundingClientRect();
-        handleMove(e.clientX - rect.left, e.clientY - rect.top);
-    });
-    window.addEventListener('mouseup', handleEnd);
-
-    canvas.addEventListener('touchstart', e => {
-        const rect = canvas.getBoundingClientRect();
-        handleStart(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
-    });
-    canvas.addEventListener('touchmove', e => {
-        const rect = canvas.getBoundingClientRect();
-        handleMove(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
-    });
-    canvas.addEventListener('touchend', handleEnd);
+    canvas.addEventListener('mousedown', startAction);
+    window.addEventListener('mousemove', moveAction);
+    window.addEventListener('mouseup', endAction);
+    canvas.addEventListener('touchstart', startAction);
+    window.addEventListener('touchmove', moveAction);
+    window.addEventListener('touchend', endAction);
 
     init(); update();
 </script>
