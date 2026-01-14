@@ -1,0 +1,1 @@
+# Latakiano.all-play-win
