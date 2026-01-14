@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LATAKIANO - MASTER POOL</title>
+    <title>LATAKIANO - ULTIMATE POOL</title>
     <style>
-        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        #table-frame { position: relative; padding: 18px; background: #4a2c16; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.9); border: 4px solid #331d0e; }
-        canvas { background: #145e2a; border-radius: 5px; cursor: crosshair; }
+        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
+        #table-frame { position: relative; padding: 15px; background: #3d2616; border-radius: 20px; box-shadow: 0 30px 60px #000; border: 5px solid #2a1a0f; }
+        canvas { background: radial-gradient(circle, #1a7d32 0%, #0a4016 100%); border-radius: 5px; }
     </style>
 </head>
 <body>
     <div id="table-frame">
-        <canvas id="poolCanvas" width="800" height="400"></canvas>
+        <canvas id="poolCanvas" width="840" height="420"></canvas>
     </div>
 
 <script>
@@ -21,21 +21,21 @@
     let balls = [];
     let isMoving = false;
     let dragData = { active: false, x: 0, y: 0 };
+    
+    // إحداثيات الحفر المعدلة لتكون بالداخل قليلاً (لضمان سقوط الكرة)
     const pockets = [
-        {x: 0, y: 0}, {x: 400, y: 0}, {x: 800, y: 0},
-        {x: 0, y: 400}, {x: 400, y: 400}, {x: 800, y: 400}
+        {x: 25, y: 25}, {x: 420, y: 15}, {x: 815, y: 25},
+        {x: 25, y: 395}, {x: 420, y: 405}, {x: 815, y: 395}
     ];
 
     function init() {
         balls = [];
-        // البيضاء
-        balls.push({ x: 200, y: 200, r: 12, vx: 0, vy: 0, color: '#fff', num: '', inPocket: false });
-        // المثلث
-        let startX = 550, startY = 200, spacing = 26, count = 1;
+        balls.push({ x: 220, y: 210, r: 14, vx: 0, vy: 0, color: '#fff', num: '', inPocket: false });
+        let startX = 580, startY = 210, spacing = 31, count = 1;
         let colors = ["#f1c40f", "#2980b9", "#e74c3c", "#8e44ad", "#e67e22", "#27ae60", "#c0392b", "#000", "#f1c40f", "#2980b9", "#e74c3c", "#8e44ad", "#e67e22", "#27ae60", "#c0392b"];
         for (let i = 0; i < 5; i++) {
             for (let j = 0; j <= i; j++) {
-                balls.push({ x: startX + i*24, y: startY - (i*13) + j*26, r: 12, vx: 0, vy: 0, color: colors[count-1], num: count++, inPocket: false });
+                balls.push({ x: startX + i*27, y: startY - (i*15) + j*31, r: 14, vx: 0, vy: 0, color: colors[count-1], num: count++, inPocket: false });
             }
         }
     }
@@ -43,34 +43,30 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // رسم الحفر بظلال داخلية (لتبدو عميقة)
+        // رسم الحفر
         pockets.forEach(p => {
             ctx.fillStyle = '#050505';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 28, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, 32, 0, Math.PI*2); ctx.fill();
         });
 
         isMoving = false;
-        for (let i = 0; i < balls.length; i++) {
-            let b = balls[i];
-            if (b.inPocket) continue;
+        balls.forEach((b, i) => {
+            if (b.inPocket) return;
 
             b.x += b.vx; b.y += b.vy;
-            b.vx *= 0.985; b.vy *= 0.985; // احتكاك الطاولة
+            b.vx *= 0.985; b.vy *= 0.985;
 
             if (Math.abs(b.vx) > 0.1 || Math.abs(b.vy) > 0.1) isMoving = true;
 
-            // نظام السقوط في الحفر (الجاذبية)
+            // نظام الجاذبية في الحفر
             pockets.forEach(p => {
                 let dist = Math.hypot(b.x - p.x, b.y - p.y);
-                if (dist < 28) { // إذا دخلت نطاق الحفرة
-                    b.vx += (p.x - b.x) * 0.1; // سحب الكرة للمركز
-                    b.vy += (p.y - b.y) * 0.1;
-                    if (dist < 15) {
-                        if (b.num === '') { // لو البيضاء وقعت ترجع لمكانها
-                            b.x = 200; b.y = 200; b.vx = 0; b.vy = 0;
-                        } else {
-                            b.inPocket = true;
-                        }
+                if (dist < 40) {
+                    b.vx += (p.x - b.x) * 0.15;
+                    b.vy += (p.y - b.y) * 0.15;
+                    if (dist < 18) {
+                        if (b.num === '') { b.x = 220; b.y = 210; b.vx = 0; b.vy = 0; }
+                        else { b.inPocket = true; }
                     }
                 }
             });
@@ -81,76 +77,74 @@
 
             // تصادم الكرات
             for (let j = i + 1; j < balls.length; j++) {
-                let b2 = balls[j];
-                if (b2.inPocket) continue;
+                let b2 = balls[j]; if (b2.inPocket) continue;
                 let dx = b2.x - b.x, dy = b2.y - b.y, dist = Math.hypot(dx, dy);
                 if (dist < b.r + b2.r) {
                     let angle = Math.atan2(dy, dx);
-                    let sin = Math.sin(angle), cos = Math.cos(angle);
-                    let vx1 = b.vx * cos + b.vy * sin, vy1 = b.vy * cos - b.vx * sin;
-                    let vx2 = b2.vx * cos + b2.vy * sin, vy2 = b2.vy * cos - b2.vx * sin;
-                    let vX1Final = vx2, vX2Final = vx1;
-                    b.vx = vX1Final * cos - vy1 * sin; b.vy = vy1 * cos + vX1Final * sin;
-                    b2.vx = vX2Final * cos - vy2 * sin; b2.vy = vy2 * cos + vX2Final * sin;
+                    let tempVx = b.vx; b.vx = b2.vx; b2.vx = tempVx;
+                    let tempVy = b.vy; b.vy = b2.vy; b2.vy = tempVy;
+                    // منع الالتصاق
+                    let overlap = (b.r + b2.r - dist) / 2;
+                    b.x -= Math.cos(angle) * overlap; b.y -= Math.sin(angle) * overlap;
+                    b2.x += Math.cos(angle) * overlap; b2.y += Math.sin(angle) * overlap;
                 }
             }
 
-            // رسم الكرة بشكل 3D
-            let grad = ctx.createRadialGradient(b.x-4, b.y-4, 2, b.x, b.y, b.r);
+            // رسم الكرة
+            let grad = ctx.createRadialGradient(b.x-5, b.y-5, 2, b.x, b.y, b.r);
             grad.addColorStop(0, '#fff'); grad.addColorStop(0.5, b.color); grad.addColorStop(1, '#000');
             ctx.fillStyle = grad;
             ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
             if(b.num !== '') {
-                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = 'black'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.fillText(b.num, b.x, b.y + 3);
+                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(b.x, b.y, 7, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'black'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillText(b.num, b.x, b.y + 4);
             }
-        }
+        });
 
-        // رسم العصا والهدف
+        // العصا وخط التنشين الطويل
         if (!isMoving && dragData.active) {
             let b = balls[0];
             let angle = Math.atan2(dragData.y - b.y, dragData.x - b.x);
-            let dist = Math.min(Math.hypot(dragData.x - b.x, dragData.y - b.y), 150);
+            let dist = Math.min(Math.hypot(dragData.x - b.x, dragData.y - b.y), 180);
             
             ctx.save();
             ctx.translate(b.x, b.y);
             ctx.rotate(angle);
             
-            // خط التصويب الأمامي (أبيض شفاف)
-            ctx.beginPath(); ctx.setLineDash([5, 8]); ctx.moveTo(-20, 0); ctx.lineTo(-400, 0);
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+            // خط إرشاد طويل جداً ودقيق
+            ctx.beginPath(); ctx.setLineDash([8, 8]); ctx.moveTo(-30, 0); ctx.lineTo(-800, 0);
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2; ctx.stroke();
             
-            // العصا الخشبية
-            let cueG = ctx.createLinearGradient(dist+20, -5, dist+20, 5);
+            // العصا
+            let cueG = ctx.createLinearGradient(dist+35, -7, dist+35, 7);
             cueG.addColorStop(0, '#5d3a1a'); cueG.addColorStop(0.5, '#deb887'); cueG.addColorStop(1, '#5d3a1a');
-            ctx.fillStyle = cueG; ctx.fillRect(dist+20, -5, 250, 10);
-            ctx.fillStyle = '#fff'; ctx.fillRect(dist+20, -5, 10, 10);
+            ctx.fillStyle = cueG; ctx.fillRect(dist+35, -7, 300, 14);
+            ctx.fillStyle = '#fff'; ctx.fillRect(dist+35, -7, 12, 14);
             ctx.restore();
         }
         requestAnimationFrame(draw);
     }
 
-    // التحكم
-    function getMousePos(e) {
+    function getPos(e) {
         const rect = canvas.getBoundingClientRect();
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         return { x: (cx - rect.left) * (canvas.width / rect.width), y: (cy - rect.top) * (canvas.height / rect.height) };
     }
-    const start = (e) => { if(!isMoving) dragData.active = true; };
-    const move = (e) => { if(dragData.active) { let p = getMousePos(e); dragData.x = p.x; dragData.y = p.y; } };
-    const end = () => {
+    canvas.addEventListener('mousedown', () => { if(!isMoving) dragData.active = true; });
+    window.addEventListener('mousemove', (e) => { if(dragData.active) { let p = getPos(e); dragData.x = p.x; dragData.y = p.y; } });
+    window.addEventListener('mouseup', () => {
         if(dragData.active) {
-            let b = balls[0];
-            let angle = Math.atan2(dragData.y - b.y, dragData.x - b.x);
-            let pwr = Math.min(Math.hypot(dragData.x - b.x, dragData.y - b.y) / 7, 22);
+            let b = balls[0]; let angle = Math.atan2(dragData.y - b.y, dragData.x - b.x);
+            let pwr = Math.min(Math.hypot(dragData.x - b.x, dragData.y - b.y) / 6, 25);
             b.vx = -Math.cos(angle) * pwr; b.vy = -Math.sin(angle) * pwr;
         }
         dragData.active = false;
-    };
+    });
+    canvas.addEventListener('touchstart', (e) => { if(!isMoving) dragData.active = true; e.preventDefault(); }, {passive: false});
+    canvas.addEventListener('touchmove', (e) => { if(dragData.active) { let p = getPos(e); dragData.x = p.x; dragData.y = p.y; } e.preventDefault(); }, {passive: false});
+    canvas.addEventListener('touchend', () => { /* نفس منطق الماوس يعمل هنا عبر النافذة */ });
 
-    canvas.addEventListener('mousedown', start); window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
-    canvas.addEventListener('touchstart', start); window.addEventListener('touchmove', move); window.addEventListener('touchend', end);
     init(); draw();
 </script>
 </body>
