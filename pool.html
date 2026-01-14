@@ -1,61 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Latakiano 8-Ball Pool</title>
+    <title>LATAKIANO - Pro Pool</title>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
-        canvas { background: #0e5c1f; border: 12px solid #5d3a1a; border-radius: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.5); cursor: crosshair; margin-top: 20px; }
-        .ui { margin-top: 10px; font-size: 1.2rem; }
+        body { background: #111; color: white; text-align: center; font-family: sans-serif; margin: 0; }
+        canvas { background: #076324; border: 15px solid #5d3a1a; border-radius: 10px; cursor: crosshair; touch-action: none; }
+        .info { margin: 20px; font-size: 1.2rem; color: #4caf50; font-weight: bold; }
     </style>
 </head>
 <body>
     <h1>LATAKIANO BILLIARDS</h1>
-    <div class="ui">Drag to aim and shoot the White Ball!</div>
-    <canvas id="poolCanvas"></canvas>
-    <br>
-    <a href="index.html" style="color: #4caf50; text-decoration: none; font-weight: bold;">[ Back to Lobby ]</a>
+    <div class="info">Drag the White Ball and Release to Shoot!</div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <br><br>
+    <a href="index.html" style="color: #888; text-decoration: none;">[ Exit Game ]</a>
 
     <script>
-        const canvas = document.getElementById('poolCanvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 800; canvas.height = 400;
 
-        let ball = { x: 200, y: 200, r: 10, vx: 0, vy: 0, color: 'white' };
-        let target = { x: 600, y: 200, r: 10, color: 'red' };
+        let ball = { x: 200, y: 200, r: 15, vx: 0, vy: 0, color: 'white' };
+        let target = { x: 600, y: 200, r: 15, vx: 0, vy: 0, color: '#e74c3c' };
         let isDragging = false;
+        let dragX, dragY;
+
+        function update() {
+            // تحريك الكرات
+            [ball, target].forEach(b => {
+                b.x += b.vx; b.y += b.vy;
+                b.vx *= 0.985; b.vy *= 0.985; // احتكاك لتقليل السرعة تدريجياً
+
+                // الارتداد من الجدران
+                if (b.x + b.r > canvas.width || b.x - b.r < 0) b.vx *= -0.8;
+                if (b.y + b.r > canvas.height || b.y - b.r < 0) b.vy *= -0.8;
+            });
+
+            // تصادم الكرات (بسيط)
+            let dx = target.x - ball.x;
+            let dy = target.y - ball.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < ball.r + target.r) {
+                ball.vx *= -0.8; ball.vy *= -0.8;
+                target.vx = dx * 0.1; target.vy = dy * 0.1;
+            }
+            draw();
+            requestAnimationFrame(update);
+        }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Draw Table Holes
+            // رسم الثقوب (Pockets)
             ctx.fillStyle = '#000';
-            [ [0,0], [400,0], [800,0], [0,400], [400,400], [800,400] ].forEach(h => {
-                ctx.beginPath(); ctx.arc(h[0], h[1], 25, 0, Math.PI*2); ctx.fill();
+            [[0,0], [400,0], [800,0], [0,400], [400,400], [800,400]].forEach(p => {
+                ctx.beginPath(); ctx.arc(p[0], p[1], 30, 0, Math.PI*2); ctx.fill();
             });
-
-            // Draw Red Ball
-            ctx.fillStyle = target.color; ctx.beginPath(); ctx.arc(target.x, target.y, target.r, 0, Math.PI*2); ctx.fill();
-
-            // Draw White Ball
-            ctx.fillStyle = ball.color; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
-
-            // Physics
-            ball.x += ball.vx; ball.y += ball.vy;
-            ball.vx *= 0.98; ball.vy *= 0.98; // Friction
-
-            requestAnimationFrame(draw);
+            // رسم الكرات
+            [ball, target].forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.stroke();
+            });
         }
 
-        canvas.onmousedown = (e) => { isDragging = true; };
-        canvas.onmouseup = (e) => {
-            if(isDragging) {
+        canvas.onmousedown = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            let mx = e.clientX - rect.left;
+            let my = e.clientY - rect.top;
+            if (Math.hypot(mx-ball.x, my-ball.y) < ball.r) isDragging = true;
+        };
+
+        window.onmouseup = (e) => {
+            if (isDragging) {
                 const rect = canvas.getBoundingClientRect();
-                ball.vx = (ball.x - (e.clientX - rect.left)) * 0.1;
-                ball.vy = (ball.y - (e.clientY - rect.top)) * 0.1;
+                ball.vx = (ball.x - (e.clientX - rect.left)) * 0.15;
+                ball.vy = (ball.y - (e.clientY - rect.top)) * 0.15;
             }
             isDragging = false;
         };
-        draw();
+
+        update();
     </script>
 </body>
 </html>
