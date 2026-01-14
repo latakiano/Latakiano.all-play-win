@@ -1,84 +1,138 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LATAKIANO - Pro Pool</title>
+    <title>LATAKIANO Pro 8-Ball</title>
     <style>
-        body { background: #111; color: white; text-align: center; font-family: sans-serif; margin: 0; }
-        canvas { background: #076324; border: 15px solid #5d3a1a; border-radius: 10px; cursor: crosshair; touch-action: none; }
-        .info { margin: 20px; font-size: 1.2rem; color: #4caf50; font-weight: bold; }
+        body { background: #111; color: white; text-align: center; font-family: sans-serif; margin: 0; overflow: hidden; }
+        canvas { background: #0e5c1f; border: 15px solid #5d3a1a; border-radius: 15px; box-shadow: 0 0 50px rgba(0,0,0,0.7); cursor: crosshair; margin-top: 20px; touch-action: none; }
+        .stats { margin-top: 10px; font-size: 1.2rem; color: #4caf50; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>LATAKIANO BILLIARDS</h1>
-    <div class="info">Drag the White Ball and Release to Shoot!</div>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <h1>LATAKIANO POOL ARENA</h1>
+    <div class="stats">Target: Sink all balls into the pockets!</div>
+    <canvas id="poolCanvas" width="800" height="400"></canvas>
     <br><br>
-    <a href="index.html" style="color: #888; text-decoration: none;">[ Exit Game ]</a>
+    <a href="index.html" style="color: #888; text-decoration: none;">[ Back to Lobby ]</a>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('poolCanvas');
         const ctx = canvas.getContext('2d');
+        const friction = 0.985;
+        let balls = [];
 
-        let ball = { x: 200, y: 200, r: 15, vx: 0, vy: 0, color: 'white' };
-        let target = { x: 600, y: 200, r: 15, vx: 0, vy: 0, color: '#e74c3c' };
-        let isDragging = false;
-        let dragX, dragY;
+        // إنشاء الكرات
+        function initGame() {
+            balls = [];
+            // الكرة البيضاء
+            balls.push({ x: 200, y: 200, r: 12, vx: 0, vy: 0, color: 'white', type: 'cue' });
 
-        function update() {
-            // تحريك الكرات
-            [ball, target].forEach(b => {
-                b.x += b.vx; b.y += b.vy;
-                b.vx *= 0.985; b.vy *= 0.985; // احتكاك لتقليل السرعة تدريجياً
-
-                // الارتداد من الجدران
-                if (b.x + b.r > canvas.width || b.x - b.r < 0) b.vx *= -0.8;
-                if (b.y + b.r > canvas.height || b.y - b.r < 0) b.vy *= -0.8;
-            });
-
-            // تصادم الكرات (بسيط)
-            let dx = target.x - ball.x;
-            let dy = target.y - ball.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < ball.r + target.r) {
-                ball.vx *= -0.8; ball.vy *= -0.8;
-                target.vx = dx * 0.1; target.vy = dy * 0.1;
+            // إنشاء المثلث (15 كرة)
+            let startX = 550;
+            let startY = 200;
+            let row = 0;
+            let col = 0;
+            let spacing = 26;
+            
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j <= i; j++) {
+                    balls.push({
+                        x: startX + i * spacing,
+                        y: startY - (i * spacing / 2) + j * spacing,
+                        r: 12, vx: 0, vy: 0,
+                        color: `hsl(${(i + j) * 40}, 70%, 50%)`,
+                        type: 'target'
+                    });
+                }
             }
-            draw();
-            requestAnimationFrame(update);
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // رسم الثقوب (Pockets)
-            ctx.fillStyle = '#000';
-            [[0,0], [400,0], [800,0], [0,400], [400,400], [800,400]].forEach(p => {
-                ctx.beginPath(); ctx.arc(p[0], p[1], 30, 0, Math.PI*2); ctx.fill();
-            });
-            // رسم الكرات
-            [ball, target].forEach(b => {
-                ctx.fillStyle = b.color;
-                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.stroke();
-            });
-        }
+        let isDragging = false;
+        let mousePos = { x: 0, y: 0 };
 
         canvas.onmousedown = (e) => {
             const rect = canvas.getBoundingClientRect();
-            let mx = e.clientX - rect.left;
-            let my = e.clientY - rect.top;
-            if (Math.hypot(mx-ball.x, my-ball.y) < ball.r) isDragging = true;
+            mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            if (Math.hypot(mousePos.x - balls[0].x, mousePos.y - balls[0].y) < 30) isDragging = true;
         };
 
-        window.onmouseup = (e) => {
+        canvas.onmousemove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        };
+
+        window.onmouseup = () => {
             if (isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                ball.vx = (ball.x - (e.clientX - rect.left)) * 0.15;
-                ball.vy = (ball.y - (e.clientY - rect.top)) * 0.15;
+                balls[0].vx = (balls[0].x - mousePos.x) * 0.12;
+                balls[0].vy = (balls[0].y - mousePos.y) * 0.12;
             }
             isDragging = false;
         };
 
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // رسم الثقوب
+            ctx.fillStyle = '#000';
+            [[0,0], [400,0], [800,0], [0,400], [400,400], [800,400]].forEach(p => {
+                ctx.beginPath(); ctx.arc(p[0], p[1], 25, 0, Math.PI*2); ctx.fill();
+            });
+
+            // خط الدليل (Cue Line)
+            if (isDragging) {
+                ctx.beginPath();
+                ctx.moveTo(balls[0].x, balls[0].y);
+                ctx.lineTo(mousePos.x, mousePos.y);
+                ctx.strokeStyle = 'white';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            for (let i = 0; i < balls.length; i++) {
+                let b = balls[i];
+                b.x += b.vx; b.y += b.vy;
+                b.vx *= friction; b.vy *= friction;
+
+                // الارتداد من الجدران
+                if (b.x < b.r || b.x > canvas.width - b.r) b.vx *= -0.8;
+                if (b.y < b.r || b.y > canvas.height - b.r) b.vy *= -0.8;
+
+                // التحقق من السقوط في الثقوب
+                [[0,0], [400,0], [800,0], [0,400], [400,400], [800,400]].forEach(p => {
+                    if (Math.hypot(b.x - p[0], b.y - p[1]) < 25) {
+                        if (b.type === 'cue') { // إذا سقطت البيضاء تعود للمركز
+                            b.x = 200; b.y = 200; b.vx = 0; b.vy = 0;
+                        } else {
+                            balls.splice(i, 1);
+                        }
+                    }
+                });
+
+                // تصادم الكرات مع بعضها
+                for (let j = i + 1; j < balls.length; j++) {
+                    let b2 = balls[j];
+                    let dx = b2.x - b.x;
+                    let dy = b2.y - b.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < b.r + b2.r) {
+                        let angle = Math.atan2(dy, dx);
+                        let sin = Math.sin(angle), cos = Math.cos(angle);
+                        // تبادل السرعات بشكل فيزيائي بسيط
+                        let tempVx = b.vx; b.vx = b2.vx; b2.vx = tempVx;
+                        let tempVy = b.vy; b.vy = b2.vy; b2.vy = tempVy;
+                    }
+                }
+
+                ctx.fillStyle = b.color;
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'black'; ctx.stroke();
+            }
+            requestAnimationFrame(update);
+        }
+
+        initGame();
         update();
     </script>
 </body>
