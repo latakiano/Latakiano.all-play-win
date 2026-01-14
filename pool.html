@@ -1,124 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>LATAKIANO Premium Billiards</title>
+    <title>LATAKIANO PRO POOL</title>
     <style>
-        body { background: #050505; color: white; text-align: center; font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .header { padding: 15px; background: linear-gradient(to bottom, #222, #000); border-bottom: 2px solid #4caf50; }
-        #scoreBoard { font-size: 1.8rem; color: #4caf50; text-shadow: 0 0 10px rgba(76,175,80,0.5); }
-        canvas { 
-            background: radial-gradient(circle, #1a7d32 0%, #074016 100%); /* لون طاولة واقعي */
-            border: 18px solid #3d2616; 
-            border-radius: 25px; 
-            box-shadow: inset 0 0 50px #000, 0 20px 50px rgba(0,0,0,0.8);
-            margin-top: 20px;
-            cursor: crosshair;
-        }
+        body { background: #111; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        #game-container { position: relative; border: 20px solid #3d2616; border-radius: 20px; box-shadow: 0 0 100px #000; }
+        canvas { background: #0b5327; cursor: crosshair; }
+        
+        /* عصا القوة الجانبية */
+        #power-bar-container { position: absolute; right: -60px; top: 50px; width: 30px; height: 300px; background: #222; border: 2px solid #444; border-radius: 5px; }
+        #power-level { position: absolute; bottom: 0; width: 100%; height: 0%; background: linear-gradient(to top, #4caf50, #ffeb3b, #f44336); transition: 0.1s; }
+        .label { position: absolute; right: -70px; top: 20px; color: white; transform: rotate(90deg); font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 style="margin:0; letter-spacing:3px;">LATAKIANO LUXURY POOL</h1>
-        <div id="scoreBoard">Score: 0</div>
-    </div>
-    
+
+<div id="game-container">
+    <div class="label">POWER GAUGE</div>
+    <div id="power-bar-container"><div id="power-level"></div></div>
     <canvas id="poolCanvas" width="900" height="450"></canvas>
+</div>
 
-    <script>
-        const canvas = document.getElementById('poolCanvas');
-        const ctx = canvas.getContext('2d');
-        let score = 0;
-        let balls = [];
+<script>
+    const canvas = document.getElementById('poolCanvas');
+    const ctx = canvas.getContext('2d');
+    const powerLevelEl = document.getElementById('power-level');
+    
+    let power = 0;
+    let isCharging = false;
+    let balls = [];
 
-        function initGame() {
-            balls = [];
-            // كرة بيضاء بلمعان واقعي
-            balls.push({ x: 250, y: 225, r: 13, vx: 0, vy: 0, color: '#ffffff', type: 'cue' });
-            
-            let startX = 600, startY = 225, spacing = 28;
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j <= i; j++) {
-                    // توزيع ألوان البلياردو الأصلية
-                    let colors = ['#f1c40f', '#2980b9', '#e74c3c', '#8e44ad', '#e67e22', '#27ae60', '#c0392b', '#2c3e50'];
-                    balls.push({
-                        x: startX + i * (spacing - 2),
-                        y: startY - (i * spacing / 2) + j * spacing,
-                        r: 13, vx: 0, vy: 0,
-                        color: colors[(i+j) % colors.length],
-                        type: 'target'
-                    });
-                }
+    // إنشاء كرات بلمعان احترافي
+    function createBall(x, y, color, type = 'target') {
+        return { x, y, r: 14, vx: 0, vy: 0, color, type };
+    }
+
+    function init() {
+        balls = [createBall(250, 225, '#fff', 'cue')];
+        // مثلث الكرات
+        for(let i=0; i<5; i++) {
+            for(let j=0; j<=i; j++) {
+                balls.push(createBall(600 + i*26, 225 - (i*13) + j*26, `hsl(${i*50 + j*20}, 70%, 50%)`));
             }
         }
+    }
 
-        function drawBall(b) {
-            // إضافة إضاءة (3D effect) لكل كرة
-            let gradient = ctx.createRadialGradient(b.x - 4, b.y - 4, 2, b.x, b.y, b.r);
-            gradient.addColorStop(0, '#fff'); // نقطة اللمعان
-            gradient.addColorStop(0.2, b.color);
-            gradient.addColorStop(1, '#000'); // الظل السفلي
+    function draw() {
+        ctx.fillStyle = '#0b5327'; // لون الطاولة
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // رسم الثقوب بظل داخلي
+        ctx.fillStyle = '#000';
+        [[0,0], [450,0], [900,0], [0,450], [450,450], [900,450]].forEach(p => {
+            ctx.beginPath(); ctx.arc(p[0], p[1], 35, 0, Math.PI*2); ctx.fill();
+        });
 
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        // نفس منطق الحركة السابق مع تحسين الاصطدام والجدران
-        function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        balls.forEach(b => {
+            // تأثير الكرة الزجاجية 3D
+            let grad = ctx.createRadialGradient(b.x-5, b.y-5, 2, b.x, b.y, b.r);
+            grad.addColorStop(0, '#fff');
+            grad.addColorStop(0.3, b.color);
+            grad.addColorStop(1, '#000');
             
-            // رسم ثقوب فخمة
-            ctx.fillStyle = '#0a0a0a';
-            [[0,0], [450,0], [900,0], [0,450], [450,450], [900,450]].forEach(p => {
-                ctx.beginPath(); ctx.arc(p[0], p[1], 35, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#222'; ctx.stroke();
-            });
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+            
+            // فيزياء الحركة
+            b.x += b.vx; b.y += b.vy;
+            b.vx *= 0.985; b.vy *= 0.985;
+            
+            if(b.x < 20 || b.x > 880) b.vx *= -0.8;
+            if(b.y < 20 || b.y > 430) b.vy *= -0.8;
+        });
 
-            balls.forEach((b, i) => {
-                b.x += b.vx; b.y += b.vy;
-                b.vx *= 0.99; b.vy *= 0.99; // احتكاك أنعم
-
-                if (b.x < b.r + 5 || b.x > canvas.width - b.r - 5) b.vx *= -0.8;
-                if (b.y < b.r + 5 || b.y > canvas.height - b.r - 5) b.vy *= -0.8;
-
-                drawBall(b);
-
-                // تصادم واقعي
-                for (let j = i + 1; j < balls.length; j++) {
-                    let b2 = balls[j];
-                    let dx = b2.x - b.x, dy = b2.y - b.y, dist = Math.hypot(dx, dy);
-                    if (dist < b.r + b2.r) {
-                        // معادلة تصادم بسيطة لكن فعالة
-                        let angle = Math.atan2(dy, dx);
-                        let speed1 = Math.hypot(b.vx, b.vy);
-                        let speed2 = Math.hypot(b2.vx, b2.vy);
-                        b.vx = -Math.cos(angle) * speed1;
-                        b.vy = -Math.sin(angle) * speed1;
-                        b2.vx = Math.cos(angle) * speed2 + Math.cos(angle) * 2;
-                        b2.vy = Math.sin(angle) * speed2 + Math.sin(angle) * 2;
-                    }
-                }
-            });
-            requestAnimationFrame(update);
+        if(isCharging) {
+            power = (power + 1.5) % 100;
+            powerLevelEl.style.height = power + '%';
         }
+        requestAnimationFrame(draw);
+    }
 
-        // تحكم الماوس
-        let isDragging = false;
-        canvas.onmousedown = () => isDragging = true;
-        window.onmouseup = (e) => {
-            if (isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                balls[0].vx = (balls[0].x - (e.clientX - rect.left)) * 0.1;
-                balls[0].vy = (balls[0].y - (e.clientY - rect.top)) * 0.1;
-            }
-            isDragging = false;
-        };
+    window.onkeydown = (e) => { if(e.code === 'Space') isCharging = true; };
+    window.onkeyup = (e) => {
+        if(e.code === 'Space') {
+            balls[0].vx = power * 0.2; // إطلاق الكرة بقوة العصا الجانبية
+            isCharging = false;
+            power = 0;
+            powerLevelEl.style.height = '0%';
+        }
+    };
 
-        initGame();
-        update();
-    </script>
+    init();
+    draw();
+</script>
 </body>
 </html>
